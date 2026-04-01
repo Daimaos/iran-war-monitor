@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Iran/War — Conflict Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080808;--surface:#111;--surface2:#191919;--border:#2a2a2a;--text:#e8e8e8;--muted:#666;--accent:#c0392b;--mono:'IBM Plex Mono',monospace;--serif:'Playfair Display',serif;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.6;min-height:100vh}
+h1{font-family:var(--serif);font-size:clamp(24px,4vw,44px);font-weight:900;line-height:1.05;color:#fff}
+#alertBanner{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--accent);color:#fff;padding:10px 20px;font-size:12px;letter-spacing:.08em;text-align:center;animation:slideDown .3s ease}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.alert-close{float:right;cursor:pointer;font-size:16px;line-height:1;margin-left:12px}
+header{border-bottom:1px solid var(--border);padding:20px 28px 14px;position:relative;margin-top:0}
+header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.eyebrow{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+h1 span{color:var(--accent)}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.live-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;padding:4px 10px;border-radius:2px}
+.live-dot{width:6px;height:6px;background:#fff;border-radius:50%;animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.ts{font-size:10px;color:var(--muted)}
+.header-sub{margin-top:6px;font-size:11px;color:var(--muted)}
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;padding:8px 0;position:relative}
+.ticker-wrap::before{content:'LIVE';position:absolute;left:0;top:0;bottom:0;background:var(--accent);color:#fff;font-size:10px;letter-spacing:.15em;font-weight:500;padding:0 12px;display:flex;align-items:center;z-index:2}
+.ticker-content{display:flex;animation:ticker 60s linear infinite;padding-left:80px}
+.ticker-content:hover{animation-play-state:paused}
+.ticker-item{white-space:nowrap;padding:0 40px;font-size:11px;color:#bbb;letter-spacing:.04em}
+.ticker-item::after{content:'◆';margin-left:40px;color:var(--accent);font-size:8px}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tension-wrap{border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.tension-title{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.tension-bar-wrap{flex:1;min-width:160px}
+.tension-track{height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.tension-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#27ae60,#f39c12,#c0392b);transition:width 1.2s ease}
+.tension-ticks{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:var(--muted)}
+.tension-note{font-size:11px;color:#888;flex:2;min-width:160px;border-left:2px solid var(--border);padding-left:14px;line-height:1.55;font-style:italic}
+.instability-bar{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.inst-card{flex:1;min-width:100px;padding:10px 14px;border-right:1px solid var(--border);text-align:center}
+.inst-card:last-child{border-right:none}
+.inst-country{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.inst-score{font-family:var(--serif);font-size:18px;font-weight:700;color:#fff}
+.inst-bar{height:3px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden}
+.inst-fill{height:100%;border-radius:2px;transition:width 1s ease}
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border)}
+.stat-card{padding:12px 16px;border-right:1px solid var(--border)}
+.stat-card:last-child{border-right:none}
+.stat-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.stat-value{font-family:var(--serif);font-size:clamp(16px,2.5vw,22px);font-weight:700;color:#fff;line-height:1;text-shadow:0 0 20px rgba(255,255,255,.08)}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.tension-score{font-family:var(--serif);font-size:22px;font-weight:700;color:#fff}
+.skel{display:inline-block;width:70px;height:18px;background:var(--border);border-radius:2px;animation:pulse 1.4s ease infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}
+.layers-bar{display:flex;align-items:center;gap:0;padding:0 28px;border-bottom:1px solid var(--border);background:#0a0a0a;height:36px;overflow-x:auto}
+.layer-lbl{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:#444;margin-right:16px;flex-shrink:0}
+.lbtn{background:transparent;border:none;border-right:1px solid #1a1a1a;color:#444;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:0 16px;cursor:pointer;height:36px;transition:all .2s;display:flex;align-items:center;gap:8px;flex-shrink:0;position:relative}
+.lbtn::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.3;transition:all .2s;box-shadow:none}
+.lbtn.active{color:#fff}
+.lbtn.active::before{opacity:1}
+.lbtn:hover{background:#111;color:#ccc}
+.lbtn.active[data-layer="conflicts"]{color:#e74c3c}
+.lbtn.active[data-layer="conflicts"]::before{box-shadow:0 0 6px #e74c3c}
+.lbtn.active[data-layer="military"]{color:#3498db}
+.lbtn.active[data-layer="military"]::before{box-shadow:0 0 6px #3498db}
+.lbtn.active[data-layer="nuclear"]{color:#f0a500}
+.lbtn.active[data-layer="nuclear"]::before{box-shadow:0 0 6px #f0a500}
+.lbtn.active[data-layer="diplomacy"]{color:#2ecc71}
+.lbtn.active[data-layer="diplomacy"]::before{box-shadow:0 0 6px #2ecc71}
+.lbtn.active[data-layer="protests"]{color:#e67e22}
+.lbtn.active[data-layer="protests"]::before{box-shadow:0 0 6px #e67e22}
+.filter-bar{display:flex;gap:6px;padding:10px 28px;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.filter-lbl{font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-right:4px}
+.fbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;cursor:pointer;border-radius:2px;transition:all .15s}
+.fbtn.active{color:#fff;border-color:transparent}
+.fbtn[data-cat="All"].active{background:#2a2a2a;border-color:#444}
+.fbtn[data-cat="Military"].active{background:#c0392b}
+.fbtn[data-cat="Diplomacy"].active{background:#2980b9}
+.fbtn[data-cat="Humanitarian"].active{background:#27ae60}
+.fbtn[data-cat="Economy"].active{background:#e67e22}
+.fbtn[data-cat="Politics"].active{background:#8e44ad}
+.fbtn[data-cat="Regional"].active{background:#16a085}
+.controls{padding:8px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.refresh-btn{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;padding:6px 14px;cursor:pointer;transition:all .2s;border-radius:2px}
+.refresh-btn:hover{background:var(--accent);color:#fff}
+.status-txt{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.spinner{width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+#map{width:100%;height:260px;border-bottom:1px solid var(--border)}
+.leaflet-container{background:#0d1117}
+.leaflet-popup-content-wrapper{background:#111;border:1px solid #333;color:#eee;border-radius:2px;font-family:var(--mono);font-size:11px;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+.leaflet-popup-tip{background:#111}
+.popup-name{font-family:var(--serif);font-size:13px;font-weight:700;color:#fff;margin-bottom:3px}
+.popup-type{font-size:9px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
+.popup-desc{color:#aaa;font-size:10px;line-height:1.55}
+.popup-severity{display:inline-block;margin-top:6px;font-size:9px;letter-spacing:.15em;text-transform:uppercase;padding:2px 7px;border-radius:2px}
+.leaflet-control-zoom a{background:#111;border-color:#333;color:#aaa}
+.leaflet-control-attribution{display:none!important}
+.map-legend{position:absolute;bottom:30px;right:10px;z-index:1000;background:rgba(8,8,8,.92);border:1px solid var(--border);padding:8px 12px;border-radius:2px;font-size:9px;line-height:2;pointer-events:none}
+.leg-item{display:flex;align-items:center;gap:7px;color:#bbb}
+.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+main{padding:0;width:100%}
+.section-title{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding:10px 28px 8px;border-bottom:1px solid var(--border)}
+.news-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0}
+.news-grid .empty{grid-column:span 2}
+@media(max-width:700px){.news-grid{grid-template-columns:1fr}}
+.ncard{background:var(--surface);border:none;border-bottom:1px solid #181818;border-left:3px solid transparent;padding:13px 20px 11px 18px;transition:all .2s;animation:fadeUp .35s ease both;cursor:pointer;width:100%;position:relative}
+.ncard:hover{background:#131313;border-left-color:var(--accent)}
+.ncard.hidden{display:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.cmeta{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.ctag{font-size:9px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;padding:2px 6px;border-radius:1px;background:rgba(255,255,255,.04)}
+.cseverity{font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:1px;margin-left:auto}
+.sev-Low{background:rgba(39,174,96,.1);color:#27ae60}
+.sev-Medium{background:rgba(243,156,18,.1);color:#f39c12}
+.sev-High{background:rgba(230,126,34,.13);color:#e67e22;box-shadow:0 0 6px rgba(230,126,34,.15)}
+.sev-Critical{background:rgba(192,57,43,.15);color:#c0392b;box-shadow:0 0 8px rgba(192,57,43,.2)}
+.ctime{font-size:10px;color:#3a3a3a;letter-spacing:.03em}
+.chead{font-family:var(--serif);font-size:clamp(15px,2vw,19px);font-weight:700;line-height:1.3;color:#ccc;margin-bottom:4px;transition:color .15s}
+.ncard:hover .chead{color:#fff}
+.cbody{font-size:11px;color:#4a4a4a;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;line-clamp:1;}
+.csrc{margin-top:7px;font-size:10px;color:#2e2e2e;display:flex;justify-content:space-between;align-items:center}
+.csrc strong{color:#484848;font-weight:400}
+.expand-hint{color:#222;text-transform:uppercase;font-size:9px;letter-spacing:.1em;transition:color .2s}
+.ncard:hover .expand-hint{color:#555}
+.empty{text-align:center;padding:40px;color:var(--muted);font-size:12px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .2s;pointer-events:none}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:#0f0f0f;border:1px solid #333;border-top:3px solid var(--accent);max-width:580px;width:100%;max-height:82vh;overflow-y:auto;border-radius:2px;transform:translateY(20px);transition:transform .25s ease;padding:26px}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-eyebrow{font-size:9px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;margin-bottom:8px}
+.modal-headline{font-family:var(--serif);font-size:clamp(17px,3vw,24px);font-weight:900;color:#fff;line-height:1.2;margin-bottom:14px}
+.modal-body{font-size:12px;color:#aaa;line-height:1.8;margin-bottom:14px}
+.modal-close{float:right;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:11px;padding:4px 10px;cursor:pointer;border-radius:2px;margin-left:12px}
+.modal-close:hover{border-color:#fff;color:#fff}
+.modal-meta{display:flex;gap:16px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);padding-top:12px;flex-wrap:wrap}
+.modal-link{display:inline-block;margin-top:12px;font-size:11px;color:var(--accent);text-decoration:none;letter-spacing:.08em}
+.modal-link:hover{text-decoration:underline}
+footer{border-top:1px solid var(--border);padding:12px 28px;font-size:10px;color:var(--muted);letter-spacing:.08em}
+/* CYBERPUNK SUBTLE */
+header::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none}
+.stat-value{text-shadow:0 0 20px rgba(255,255,255,.08)}
+.tension-score{text-shadow:0 0 15px rgba(192,57,43,.5)}
+.live-badge{animation:livePulse 2s ease-in-out infinite}
+@keyframes livePulse{0%,100%{box-shadow:0 0 0 rgba(192,57,43,0)}50%{box-shadow:0 0 14px rgba(192,57,43,.6)}}
+.inst-score{text-shadow:0 0 8px rgba(255,255,255,.15)}
+.ncard:hover{background:var(--surface2);box-shadow:inset 3px 0 0 var(--accent)}
+.ncard.sev-critical-card{animation:fadeUp .35s ease both,critPulse 3s ease-in-out infinite}
+@keyframes critPulse{0%,100%{background:var(--surface)}50%{background:#0f0808}}
+.refresh-btn{letter-spacing:.2em;position:relative;overflow:hidden}
+.refresh-btn::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transition:left .4s}
+.refresh-btn:hover::after{left:100%}
+.controls{background:#090909}
+.section-title{background:#090909}
+@media(max-width:600px){.stats-bar{grid-template-columns:repeat(2,1fr)}.instability-bar{display:none}.tension-note{display:none}}
+</style>
+</head>
+<body>
+<div id="alertBanner"><span id="alertText"></span><span class="alert-close" onclick="closeAlert()">x</span></div>
+<header>
+  <div class="header-top">
+    <div>
+      <div class="eyebrow">Conflict Monitor · Middle East · 2026</div>
+      <h1>IRAN<span>/</span>WAR</h1>
+      <p class="header-sub">Neutral real-time intelligence · BBC · Al Jazeera · ACLED data</p>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><span class="live-dot"></span> Live</div>
+      <span class="ts" id="ts">—</span>
+    </div>
+  </div>
+</header>
+<div class="ticker-wrap"><div class="ticker-content" id="ticker"><span class="ticker-item">Loading latest headlines...</span></div></div>
+<div class="tension-wrap">
+  <div>
+    <div class="tension-title">Tension Level</div>
+    <div class="tension-score">9<span style="font-size:14px;color:var(--muted)">/10</span></div>
+    <div style="font-size:10px;margin-top:2px;color:#c0392b">Critical — Active War</div>
+  </div>
+  <div class="tension-bar-wrap">
+    <div class="tension-track"><div class="tension-fill" style="width:90%"></div></div>
+    <div class="tension-ticks"><span>Low</span><span>Moderate</span><span>High</span><span>Critical</span></div>
+  </div>
+  <div class="tension-note">US-Israel military operations ongoing against Iran since Feb 28. Strait of Hormuz partially blockaded. Pakistan-mediated diplomacy underway.</div>
+</div>
+<div class="instability-bar">
+  <div class="inst-card"><div class="inst-country">Iran</div><div class="inst-score" id="inst-Iran">—</div><div class="inst-bar"><div class="inst-fill" id="fill-Iran" style="width:0%;background:#c0392b"></div></div></div>
+  <div class="inst-card"><div class="inst-country">Israel</div><div class="inst-score" id="inst-Israel">—</div><div class="inst-bar"><div class="inst-fill" id="fill-Israel" style="width:0%;background:#e67e22"></div></div></div>
+  <div class="inst-card"><div class="inst-country">Lebanon</div><div class="inst-score" id="inst-Lebanon">—</div><div class="inst-bar"><div class="inst-fill" id="fill-Lebanon" style="width:0%;background:#f39c12"></div></div></div>
+  <div class="inst-card"><div class="inst-country">Iraq</div><div class="inst-score" id="inst-Iraq">—</div><div class="inst-bar"><div class="inst-fill" id="fill-Iraq" style="width:0%;background:#e67e22"></div></div></div>
+  <div class="inst-card"><div class="inst-country">Yemen</div><div class="inst-score" id="inst-Yemen">—</div><div class="inst-bar"><div class="inst-fill" id="fill-Yemen" style="width:0%;background:#8e44ad"></div></div></div>
+</div>
+<div class="stats-bar">
+  <div class="stat-card"><div class="stat-label">Days of Conflict</div><div class="stat-value" id="sDays">—</div><div class="stat-sub">since Feb 28, 2026</div></div>
+  <div class="stat-card"><div class="stat-label">Est. Casualties</div><div class="stat-value" id="sCas"><span class="skel"></span></div><div class="stat-sub">combined reported</div></div>
+  <div class="stat-card"><div class="stat-label">Brent Crude</div><div class="stat-value" id="sOil"><span class="skel"></span></div><div class="stat-sub">per barrel</div></div>
+  <div class="stat-card"><div class="stat-label">Active Fronts</div><div class="stat-value">5</div><div class="stat-sub">Iran·Israel·Lebanon·Iraq·Yemen</div></div>
+</div>
+<div class="layers-bar">
+  <span class="layer-lbl">LAYERS</span>
+  <button class="lbtn active" data-layer="conflicts" onclick="toggleLayer(this)">Conflicts</button>
+  <button class="lbtn active" data-layer="military" onclick="toggleLayer(this)">Military</button>
+  <button class="lbtn active" data-layer="nuclear" onclick="toggleLayer(this)">Nuclear</button>
+  <button class="lbtn active" data-layer="diplomacy" onclick="toggleLayer(this)">Diplomacy</button>
+  <button class="lbtn active" data-layer="protests" onclick="toggleLayer(this)">Protests</button>
+</div>
+<div style="position:relative">
+  <div id="map"></div>
+  <div class="map-legend" style="display:flex;flex-direction:column;gap:5px">
+    <div class="leg-item"><span style="width:8px;height:8px;border-radius:50%;background:#e74c3c;box-shadow:0 0 5px #e74c3c;flex-shrink:0;display:inline-block"></span>Conflict</div>
+    <div class="leg-item"><span style="width:8px;height:8px;border-radius:50%;background:#3498db;box-shadow:0 0 5px #3498db;flex-shrink:0;display:inline-block"></span>Military</div>
+    <div class="leg-item"><span style="width:8px;height:8px;border-radius:50%;background:#f0a500;box-shadow:0 0 5px #f0a500;flex-shrink:0;display:inline-block"></span>Nuclear</div>
+    <div class="leg-item"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 5px #2ecc71;flex-shrink:0;display:inline-block"></span>Diplomacy</div>
+    <div class="leg-item"><span style="width:8px;height:8px;border-radius:50%;background:#e67e22;box-shadow:0 0 5px #e67e22;flex-shrink:0;display:inline-block"></span>Protest</div>
+  </div>
+</div>
+<div class="filter-bar">
+  <span class="filter-lbl">News Filter:</span>
+  <button class="fbtn active" data-cat="All">All</button>
+  <button class="fbtn" data-cat="Military">Military</button>
+  <button class="fbtn" data-cat="Diplomacy">Diplomacy</button>
+  <button class="fbtn" data-cat="Humanitarian">Humanitarian</button>
+  <button class="fbtn" data-cat="Economy">Economy</button>
+  <button class="fbtn" data-cat="Politics">Politics</button>
+  <button class="fbtn" data-cat="Regional">Regional</button>
+</div>
+<div class="controls">
+  <button class="refresh-btn" onclick="loadNews()">Refresh News</button>
+  <span class="status-txt" id="stTxt">Loading...</span>
+</div>
+<main>
+  <div class="section-title">Latest Updates</div>
+  <div class="news-grid" id="grid"></div>
+</main>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px">
+      <div class="modal-eyebrow" id="mCat"></div>
+      <button class="modal-close" onclick="closeModal()">X Close</button>
+    </div>
+    <div class="modal-headline" id="mHead"></div>
+    <div class="modal-body" id="mBody"></div>
+    <a class="modal-link" id="mLink" target="_blank">Read full article</a>
+    <div class="modal-meta">
+      <span>SOURCE: <strong id="mSrc"></strong></span>
+      <span>TIME: <strong id="mTime"></strong></span>
+    </div>
+  </div>
+</div>
+<footer>IRAN/WAR · Conflict Monitor · Neutral and informational · BBC, Al Jazeera, ACLED</footer>
+<script>
+const API='http://localhost:5000/api';
+const catClr={Military:'#c0392b',Diplomacy:'#2980b9',Humanitarian:'#27ae60',Economy:'#e67e22',Politics:'#8e44ad',Regional:'#16a085'};
+function showAlert(msg){document.getElementById('alertText').textContent='ALERT: '+msg;var b=document.getElementById('alertBanner');b.style.display='block';document.querySelector('header').style.marginTop='40px';setTimeout(closeAlert,8000);}
+function closeAlert(){document.getElementById('alertBanner').style.display='none';document.querySelector('header').style.marginTop='0';}
+document.getElementById('sDays').textContent=Math.floor((new Date()-new Date('2026-02-28'))/86400000);
+document.getElementById('ts').textContent=new Date().toUTCString().replace('GMT','UTC');
+var map=L.map('map',{scrollWheelZoom:true,zoomControl:false}).setView([29,50],4);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'CartoDB',maxZoom:18}).addTo(map);
+var mapData={
+  conflicts:[
+    {n:'Tehran',lt:35.689,lg:51.389,d:'Capital of Iran — primary US-Israeli strike target Feb 28, 2026',sev:'Critical'},
+    {n:'Isfahan Strike Zone',lt:32.661,lg:51.680,d:'Air defense and military infrastructure targeted',sev:'Critical'},
+    {n:'Bandar Abbas',lt:27.183,lg:56.267,d:'Iranian naval base — central to Strait of Hormuz blockade',sev:'High'},
+    {n:'Beirut',lt:33.894,lg:35.502,d:'Hezbollah escalated rocket attacks into northern Israel',sev:'High'},
+    {n:'Baghdad',lt:33.315,lg:44.366,d:'Iran-aligned PMF militias attacking US forces',sev:'Medium'},
+    {n:'Sanaa, Yemen',lt:15.369,lg:44.191,d:'Houthi forces launching ballistic missiles toward Israel',sev:'High'},
+    {n:'Strait of Hormuz',lt:26.567,lg:56.5,d:'Partial Iranian blockade — 20% of global oil disrupted',sev:'Critical'}
+  ],
+  military:[
+    {n:'Al Udeid Air Base',lt:25.117,lg:51.315,d:'Primary US Air Force staging base — Qatar',sev:'Medium'},
+    {n:'Al Dhafra Air Base',lt:24.248,lg:54.548,d:'US 5th Air Force — UAE',sev:'Medium'},
+    {n:'USS Gerald R. Ford CSG',lt:24.5,lg:58.0,d:'US carrier strike group — Arabian Sea',sev:'High'},
+    {n:'IDF Northern Command',lt:32.794,lg:35.534,d:'Israeli forces advancing in southern Lebanon',sev:'High'},
+    {n:'IRGC HQ Tehran',lt:35.745,lg:51.375,d:'Iranian Revolutionary Guard Corps — heavily targeted',sev:'Critical'}
+  ],
+  nuclear:[
+    {n:'Natanz Enrichment Facility',lt:33.724,lg:51.726,d:'Primary uranium enrichment site — struck in opening strikes',sev:'Critical'},
+    {n:'Fordow Nuclear Bunker',lt:34.885,lg:50.995,d:'Underground enrichment — targeted by US bunker-busters',sev:'Critical'},
+    {n:'Arak Heavy Water Reactor',lt:34.098,lg:49.235,d:'Plutonium-capable reactor — damaged in strikes',sev:'High'},
+    {n:'Bushehr Nuclear Plant',lt:28.834,lg:50.888,d:'Civilian nuclear power plant — not yet targeted',sev:'Medium'}
+  ],
+  diplomacy:[
+    {n:'Islamabad',lt:33.684,lg:73.048,d:'Pakistan hosting US-Iran backchannel peace negotiations',sev:'Low'},
+    {n:'Riyadh',lt:24.714,lg:46.675,d:'Saudi Arabia managing oil windfall amid instability',sev:'Medium'},
+    {n:'Doha',lt:25.286,lg:51.533,d:'Qatar offering diplomatic channel',sev:'Low'},
+    {n:'Ankara',lt:39.921,lg:32.854,d:'Turkey calling for ceasefire — NATO tensions rising',sev:'Low'}
+  ],
+  protests:[
+    {n:'Tehran Protests',lt:35.720,lg:51.420,d:'Anti-government protests — security forces deployed',sev:'High'},
+    {n:'New York Anti-war',lt:40.712,lg:-74.005,d:'Large anti-war demonstrations outside UN HQ',sev:'Low'},
+    {n:'London Protests',lt:51.507,lg:-0.127,d:'Protests outside Downing Street over UK support',sev:'Low'}
+  ]
+};
+var sevClr={Critical:'#c0392b',High:'#e67e22',Medium:'#f39c12',Low:'#27ae60'};
+var layerClr={conflicts:'#ff2d2d',military:'#00aaff',nuclear:'#ffcc00',diplomacy:'#00ff88',protests:'#ff8800'};
+var layerGroups={};
+var activeLayers={conflicts:true,military:true,nuclear:true,diplomacy:true,protests:true};
+
+// Inject cyberpunk marker CSS
+var markerStyle=document.createElement('style');
+markerStyle.textContent=`
+.cpk-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+.cpk-pulse{position:absolute;border-radius:50%;animation:cpkPulse 2s ease-out infinite;opacity:0}
+@keyframes cpkPulse{0%{transform:scale(0.8);opacity:0.8}100%{transform:scale(2.2);opacity:0}}
+.cpk-core{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;font-weight:900;letter-spacing:0}
+.cpk-ring{position:absolute;border-radius:50%;border:1px solid;animation:cpkRing 1.5s ease-in-out infinite alternate}
+@keyframes cpkRing{from{opacity:0.3;transform:scale(0.95)}to{opacity:1;transform:scale(1.05)}}
+`;
+document.head.appendChild(markerStyle);
+
+function makeCyberpunkIcon(layer,sev){
+  var col=layerClr[layer];
+  var sz=sev==='Critical'?24:sev==='High'?19:15;
+  var pulse=sev==='Critical'?'0.8s':sev==='High'?'1.5s':'3s';
+  var shape,inner;
+  if(layer==='conflicts'){
+    // Diamond shape
+    shape='transform:rotate(45deg);border-radius:2px';
+    inner='<div style="transform:rotate(-45deg);font-size:'+(sz*0.5)+'px;color:'+col+'">✕</div>';
+  } else if(layer==='military'){
+    // Hexagon-ish with star
+    shape='border-radius:3px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)';
+    inner='<div style="font-size:'+(sz*0.55)+'px;color:'+col+'">★</div>';
+  } else if(layer==='nuclear'){
+    // Circle with ☢
+    shape='border-radius:50%';
+    inner='<div style="font-size:'+(sz*0.6)+'px;color:'+col+'">☢</div>';
+  } else if(layer==='diplomacy'){
+    // Rounded square
+    shape='border-radius:4px';
+    inner='<div style="font-size:'+(sz*0.55)+'px;color:'+col+'">◆</div>';
+  } else {
+    // Triangle for protests
+    shape='clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0';
+    inner='<div style="margin-top:4px;font-size:'+(sz*0.45)+'px;color:'+col+'">▲</div>';
+  }
+  var html=`<div class="cpk-wrap" style="width:${sz*2}px;height:${sz*2}px">
+    <div class="cpk-pulse" style="width:${sz}px;height:${sz}px;background:${col};animation-duration:${pulse}"></div>
+    <div class="cpk-ring" style="width:${sz+4}px;height:${sz+4}px;border-color:${col}66"></div>
+    <div class="cpk-core" style="width:${sz}px;height:${sz}px;background:${col}22;border:1.5px solid ${col};${shape};box-shadow:0 0 ${sev==='Critical'?10:6}px ${col}88,inset 0 0 ${sev==='Critical'?6:3}px ${col}44">
+      ${inner}
+    </div>
+  </div>`;
+  return L.divIcon({className:'',html:html,iconSize:[sz*2,sz*2],iconAnchor:[sz,sz]});
+}
+
+Object.keys(mapData).forEach(function(layer){
+  layerGroups[layer]=L.layerGroup().addTo(map);
+  mapData[layer].forEach(function(loc){
+    var col=layerClr[layer];
+    var sCol=sevClr[loc.sev]||'#888';
+    var icon=makeCyberpunkIcon(layer,loc.sev);
+    L.marker([loc.lt,loc.lg],{icon:icon})
+     .bindPopup('<div class="popup-name">'+loc.n+'</div><div class="popup-type" style="color:'+col+'">'+layer.toUpperCase()+'</div><div class="popup-desc">'+loc.d+'</div><span class="popup-severity" style="background:'+sCol+'22;color:'+sCol+'">'+loc.sev+'</span>')
+     .addTo(layerGroups[layer]);
+  });
+});
+function toggleLayer(btn){
+  var layer=btn.dataset.layer;
+  btn.classList.toggle('active');
+  activeLayers[layer]=!activeLayers[layer];
+  if(activeLayers[layer]){layerGroups[layer].addTo(map);}else{map.removeLayer(layerGroups[layer]);}
+}
+async function loadStats(){
+  try{
+    var res=await fetch(API+'/stats');
+    var data=await res.json();
+    if(data.success&&data.data){
+      var s=data.data;
+      if(s.casualties)document.getElementById('sCas').textContent=s.casualties.toLocaleString();
+      if(s.oilPrice)document.getElementById('sOil').textContent=s.oilPrice;
+      if(s.instability){
+        Object.keys(s.instability).forEach(function(country){
+          var score=s.instability[country];
+          var el=document.getElementById('inst-'+country);
+          var fill=document.getElementById('fill-'+country);
+          if(el)el.textContent=score+'/100';
+          if(fill)fill.style.width=score+'%';
+        });
+      }
+    }
+  }catch(e){console.error('Stats error:',e);}
+}
+var activeF='All';
+document.querySelectorAll('.fbtn').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.fbtn').forEach(function(x){x.classList.remove('active');});
+    b.classList.add('active');activeF=b.dataset.cat;applyFilter();
+  });
+});
+function applyFilter(){
+  document.querySelectorAll('.ncard').forEach(function(c){
+    var show=activeF==='All'||c.dataset.cat===activeF;
+    c.classList.toggle('hidden',!show);
+  });
+}
+function timeAgo(dateStr){
+  var diff=Date.now()-new Date(dateStr);
+  var h=Math.floor(diff/3600000);
+  var d=Math.floor(diff/86400000);
+  if(h<1)return'Just now';
+  if(h<24)return h+'h ago';
+  return d+'d ago';
+}
+function getSeverity(article){
+  var text=(article.title+' '+(article.summary||'')).toLowerCase();
+  if(['airstrike','missile','killed','attack','explosion','nuclear'].some(function(w){return text.includes(w);}))return'High';
+  if(['ceasefire','talks','diplomacy','sanction'].some(function(w){return text.includes(w);}))return'Medium';
+  return'Low';
+}
+function renderCards(articles){
+  var g=document.getElementById('grid');
+  g.innerHTML='';
+  if(!articles.length){g.innerHTML='<div class="empty">No updates found.</div>';return;}
+  var tickerItems=articles.slice(0,15).map(function(a){return'<span class="ticker-item">'+a.title+'</span>';}).join('');
+  document.getElementById('ticker').innerHTML=tickerItems+tickerItems;
+  articles.forEach(function(a,i){
+    var col=catClr[a.category]||'#666';
+    var sev=getSeverity(a);
+    var c=document.createElement('div');
+    c.className='ncard'+(sev==='High'||sev==='Critical'?' sev-critical-card':'');c.dataset.cat=a.category;
+    c.style.cssText='animation-delay:'+i*40+'ms;border-left-color:'+col;
+    c.innerHTML='<div class="cmeta"><span class="ctag" style="color:'+col+';background:'+col+'18">'+(a.category||'Update')+'</span><span class="ctime">'+timeAgo(a.publishedAt)+'</span><span class="cseverity sev-'+sev+'">'+sev+'</span></div><div class="chead">'+a.title+'</div><div class="cbody">'+(a.summary||'')+'</div><div class="csrc"><span>SOURCE <strong>'+a.source+'</strong></span><span class="expand-hint">expand →</span></div>';
+    c.addEventListener('click',function(){openModal(a,col);});
+    g.appendChild(c);
+    if(i===0&&sev==='High')showAlert(a.title);
+  });
+  applyFilter();
+}
+function setStatus(m,loading){
+  document.getElementById('stTxt').innerHTML=loading?'<span class="spinner"></span>'+m:m;
+}
+async function loadNews(){
+  setStatus('Fetching latest news...',true);
+  try{
+    var res=await fetch(API+'/news');
+    var data=await res.json();
+    if(data.success){
+      renderCards(data.data);
+      document.getElementById('ts').textContent=new Date().toUTCString().replace('GMT','UTC');
+      setStatus(data.data.length+' articles loaded at '+new Date().toLocaleTimeString());
+    }
+  }catch(e){
+    setStatus('Cannot reach backend. Is the server running?');
+    console.error(e);
+  }
+}
+function openModal(a,col){
+  document.getElementById('mCat').textContent=a.category;
+  document.getElementById('mCat').style.color=col;
+  document.getElementById('mHead').textContent=a.title;
+  document.getElementById('mBody').textContent=a.summary;
+  document.getElementById('mSrc').textContent=a.source;
+  document.getElementById('mTime').textContent=timeAgo(a.publishedAt);
+  var link=document.getElementById('mLink');
+  if(a.url){link.href=a.url;link.style.display='inline';}else{link.style.display='none';}
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===document.getElementById('modalOverlay'))closeModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+loadNews();
+loadStats();
+</script>
+</body>
+</html>
