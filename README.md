@@ -2,7 +2,7 @@
 
 A real-time geopolitical intelligence dashboard tracking the Iran conflict (Feb 28, 2026 - present) with AI-powered news aggregation, sentiment analysis, and tension monitoring.
 
-![Dashboard Preview](https://img.shields.io/badge/Status-Active-green) ![React](https://img.shields.io/badge/React-18.x-blue) ![Anthropic](https://img.shields.io/badge/Claude-Sonnet%204-purple)
+![Dashboard Preview](https://img.shields.io/badge/Status-Active-green)
 
 ## 🎯 Overview
 
