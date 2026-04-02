@@ -24,7 +24,7 @@ This dashboard provides real-time conflict intelligence by combining web search,
 
 ## 🚀 Live Demo
 
-[View Live Dashboard](#) *(add your deployment URL)*
+[View Live Dashboard](https://serene-yeot-f9b1bc.netlify.app/)
 
 ## 🛠️ Tech Stack
 
