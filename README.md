@@ -158,12 +158,6 @@ Modify weights in `calculateTensionScore()` function to adjust sensitivity.
 - AI analysis may have biases or inaccuracies
 - Always cross-reference with primary sources
 
-### API Costs
-- Anthropic API charges per token (input + output)
-- Auto-refresh can accumulate costs quickly
-- Estimated: $0.50-2.00 per hour on 30s refresh
-- Use manual refresh for cost control
-
 ### Rate Limits
 - Anthropic: 5 requests/minute (Tier 1)
 - Implement exponential backoff if hitting limits
@@ -187,24 +181,6 @@ Contributions welcome! Areas for improvement:
 4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open Pull Request
 
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 👤 Author
-
-**Deepak Denny (Daimaos)**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
-- Student ID: 24MCAR0187, Jain University
-
-## 🙏 Acknowledgments
-
-- **Anthropic** for Claude API access
-- **ACLED** for conflict event data
-- **React** and **TailwindCSS** communities
-- Built as part of MCA Semester IV coursework
-
 ## 📚 References
 
 - [Anthropic API Documentation](https://docs.anthropic.com/)
@@ -218,14 +194,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - Tension meter occasionally spikes on breaking news
 - Mobile responsiveness needs optimization
 
-## 📈 Future Roadmap
-
-- **Q2 2026**: Multi-region support, map integration
-- **Q3 2026**: Predictive analytics using historical ACLED data
-- **Q4 2026**: Real-time alerts via Telegram/WhatsApp
-
 ---
 
 **Disclaimer**: This dashboard aggregates publicly available information and provides AI-generated analysis. It is not affiliated with any government, military, or intelligence organization. Use responsibly.
 
-**Last Updated**: April 3, 2026
+**Last Updated**: April 2, 2026
